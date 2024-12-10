@@ -1,4 +1,3 @@
-
 import streamlit as st
 import phonenumbers
 from phonenumbers import geocoder, carrier, timezone
@@ -68,7 +67,7 @@ class NumberScanner:
             'clean': clean_number,
             'dashed': '-'.join([clean_number[i:i+3] for i in range(0, len(clean_number), 3)]),
             'bracketed': f"({clean_number[:3]}) {clean_number[3:6]}-{clean_number[6:]}",
-            'dotted': '.'.join([clean_number[i:i+3] for i in range(0, len(clean_number), 3)])
+            'dotted': f"+1.{clean_number[-10:-7]}.{clean_number[-7:-4]}.{clean_number[-4:]}" if not clean_number.startswith('+') else f"{clean_number[0:2]}.{clean_number[2:5]}.{clean_number[5:8]}.{clean_number[8:]}",
         }
 
     def perform_osint_scan(self):
