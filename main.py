@@ -12,6 +12,23 @@ class AdvancedPhoneInfoga:
         self.phone_number = phone_number
         self.parsed_number = phonenumbers.parse(phone_number)
         self.results = {}
+        self.rate_limit = {'count': 0, 'max_requests': 100}
+        
+    def check_rate_limit(self):
+        """Basic rate limiting implementation"""
+        self.rate_limit['count'] += 1
+        return self.rate_limit['count'] <= self.rate_limit['max_requests']
+        
+    def get_line_type(self):
+        """Determine if number is mobile, landline, or VoIP"""
+        number_type = phonenumbers.number_type(self.parsed_number)
+        type_map = {
+            0: "UNKNOWN",
+            1: "MOBILE",
+            2: "LANDLINE",
+            3: "VOIP"
+        }
+        self.results['LineType'] = type_map.get(number_type, "UNKNOWN")
 
     def validate_number(self):
         """Validate the phone number format"""
@@ -60,11 +77,24 @@ class AdvancedPhoneInfoga:
         """Execute all checks and return results"""
         if not self.validate_number():
             return {"Error": "Invalid phone number format"}
+            
+        if not self.check_rate_limit():
+            return {"Error": "Rate limit exceeded"}
 
         self.get_basic_info()
+        self.get_line_type()
         self.lookup_via_api()
         self.web_scrape_info()
         self.dark_web_scan()
+        
+        # Add risk score based on various factors
+        risk_score = 0
+        if self.results.get('LineType') == "VOIP":
+            risk_score += 50
+        if not self.results.get('Carrier'):
+            risk_score += 30
+            
+        self.results['RiskScore'] = risk_score
         return self.results
 
 
