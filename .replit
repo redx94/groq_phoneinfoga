@@ -5,18 +5,10 @@ modules = ["python-3.11"]
 [nix]
 channel = "stable-24_05"
 
-[unitTest]
-language = "python3"
-
-[gitHubImport]
-requiredFiles = [".replit", "replit.nix"]
-
 [deployment]
-run = ["bash", "-c", "pip install streamlit && streamlit run main.py"]
+run = ["sh", "-c", "pip install -r requirements.txt && streamlit run main.py --server.address=0.0.0.0 --server.port=8080"]
 deploymentTarget = "cloudrun"
 
-[languages]
-[languages.python3]
-pattern = "**/*.py"
-[languages.python3.languageServer]
-start = "pylsp"
+[[ports]]
+localPort = 8080
+externalPort = 80
