@@ -1,0 +1,7 @@
+
+beautifulsoup4>=4.12.3
+phonenumbers>=8.13.51
+requests>=2.32.3
+streamlit>=1.32.0
+groq>=0.4.1
+pypdf>=4.0.1
