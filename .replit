@@ -1,4 +1,5 @@
 
+run = "streamlit run main.py --server.address=0.0.0.0 --server.port=8080"
 entrypoint = "main.py"
 modules = ["python-3.11"]
 
@@ -6,9 +7,12 @@ modules = ["python-3.11"]
 channel = "stable-24_05"
 
 [deployment]
-run = ["sh", "-c", "pip install -r requirements.txt && streamlit run main.py --server.address=0.0.0.0 --server.port=8080"]
+run = ["streamlit", "run", "main.py", "--server.address=0.0.0.0", "--server.port=8080"]
 deploymentTarget = "cloudrun"
 
 [[ports]]
 localPort = 8080
 externalPort = 80
+
+[env]
+PYTHONPATH = "${PYTHONPATH}:${workspaceDir}"
