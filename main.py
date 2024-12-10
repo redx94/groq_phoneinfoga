@@ -64,16 +64,47 @@ class NumberScanner:
     def perform_osint_scan(self):
         osint_results = {}
         
-        # NumVerify-like scan
-        try:
-            num_verify_url = f"https://api.numlookupapi.com/v1/validate/{self.number}"
-            response = requests.get(num_verify_url, headers=self.headers)
-            if response.status_code == 200:
-                osint_results['num_lookup'] = response.json()
-        except Exception as e:
-            osint_results['num_lookup_error'] = str(e)
+        # Additional search engines
+        search_engines = {
+            'bing': 'https://www.bing.com/search',
+            'duckduckgo': 'https://duckduckgo.com/html/',
+            'yandex': 'https://yandex.com/search/'
+        }
+        
+        for engine, url in search_engines.items():
+            try:
+                params = {'q': self.number}
+                response = requests.get(url, params=params, headers=self.headers)
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.text, 'html.parser')
+                    results = []
+                    for result in soup.find_all(['h2', 'h3']):
+                        if result.find('a'):
+                            results.append({
+                                'title': result.text.strip(),
+                                'url': result.find('a').get('href', '')
+                            })
+                    osint_results[f'{engine}_results'] = results
+            except Exception as e:
+                osint_results[f'{engine}_error'] = str(e)
+            time.sleep(2)
 
-        # Additional OSINT sources can be added here
+        # Business directories
+        directories = [
+            'yellowpages.com', 'bbb.org', 'yelp.com',
+            'chamberofcommerce.com', 'manta.com'
+        ]
+        
+        for directory in directories:
+            try:
+                url = f"https://www.{directory}/search"
+                response = requests.get(url, params={'q': self.number}, headers=self.headers)
+                if response.status_code == 200:
+                    osint_results[f'{directory}_found'] = True
+            except Exception as e:
+                osint_results[f'{directory}_error'] = str(e)
+            time.sleep(1)
+
         return osint_results
 
     def scan_footprint(self):
@@ -138,7 +169,7 @@ class NumberScanner:
 def generate_ai_analysis(results, api_key):
     client = groq.Groq(api_key=api_key)
     
-    prompt = f"""Analyze this phone number information and create a detailed report:
+    initial_prompt = f"""Analyze this phone number information and create a detailed report:
     {json.dumps(results, indent=2)}
     
     Create a comprehensive analysis including:
@@ -146,11 +177,63 @@ def generate_ai_analysis(results, api_key):
     2. Digital Presence Analysis
     3. Risk Assessment
     4. Social Media Footprint
-    5. Recommendations and Concerns
+    5. Data Verification & Cross-Reference
+    6. Additional Findings & Patterns
+    7. Temporal Analysis (Data Freshness)
+    8. Recommendations and Security Concerns
     
-    Format as a clear, professional report with markdown headings and bullet points.
-    Include any suspicious patterns or potential security concerns.
+    Perform fact-checking and validation of the provided data.
+    Identify any inconsistencies or outdated information.
+    Look for additional connections or patterns not captured in the initial scan.
+    Assess the reliability of each data source.
+    
+    Format as a detailed professional report with markdown headings and bullet points.
     """
+    
+    try:
+        # Initial analysis
+        completion = client.chat.completions.create(
+            messages=[{"role": "user", "content": initial_prompt}],
+            model="mixtral-8x7b-32768",
+            temperature=0.3,
+            max_tokens=2000
+        )
+        initial_analysis = completion.choices[0].message.content
+        
+        # Secondary verification prompt
+        verification_prompt = f"""Given the initial analysis:
+        {initial_analysis}
+        
+        Please verify the findings and expand the analysis:
+        1. Cross-reference the data points
+        2. Identify any potential gaps or inconsistencies
+        3. Suggest additional data sources to check
+        4. Validate temporal aspects of the data
+        5. Assess confidence levels for each finding
+        """
+        
+        verification = client.chat.completions.create(
+            messages=[
+                {"role": "user", "content": initial_prompt},
+                {"role": "assistant", "content": initial_analysis},
+                {"role": "user", "content": verification_prompt}
+            ],
+            model="mixtral-8x7b-32768",
+            temperature=0.2,
+            max_tokens=2000
+        )
+        
+        final_report = f"""# Comprehensive Phone Number Analysis Report
+
+{initial_analysis}
+
+## Verification and Additional Findings
+{verification.choices[0].message.content}
+"""
+        return final_report
+        
+    except Exception as e:
+        return f"AI Analysis Error: {str(e)}"
     
     try:
         completion = client.chat.completions.create(
