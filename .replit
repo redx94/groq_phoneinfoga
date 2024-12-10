@@ -12,5 +12,11 @@ language = "python3"
 requiredFiles = [".replit", "replit.nix"]
 
 [deployment]
-run = ["sh", "-c", "pip install -r requirements.txt && streamlit run main.py --server.address=0.0.0.0 --server.port=8080"]
+run = ["bash", "-c", "pip install streamlit && streamlit run main.py"]
 deploymentTarget = "cloudrun"
+
+[languages]
+[languages.python3]
+pattern = "**/*.py"
+[languages.python3.languageServer]
+start = "pylsp"
