@@ -199,11 +199,54 @@ class NumberScanner:
         
         return social_results
 
-def generate_ai_analysis(results, api_key):
-    client = groq.Groq(api_key=api_key)
+def generate_human_readable_report(results):
+    """Generate a human readable report from scan results"""
+    report = ["# Comprehensive Phone Number Analysis Report\n"]
     
-    initial_prompt = f"""Analyze this phone number information and create a detailed report:
-    {json.dumps(results, indent=2)}
+    # Basic Information
+    if 'formatted' in results:
+        report.append("## 1. Basic Information")
+        report.append(f"- Phone Number: {results['formatted'].get('international', 'N/A')}")
+        report.append(f"- Region: {results.get('country', 'Unknown')}")
+        report.append(f"- Carrier: {results.get('carrier', 'Not specified')}")
+        report.append(f"- Timezone: {', '.join(results.get('timezones', ['Unknown']))}\n")
+    
+    # Digital Footprint
+    if 'footprint' in results:
+        report.append("## 2. Digital Presence")
+        found_results = False
+        for key, value in results['footprint'].items():
+            if 'search_results' in key and value:
+                found_results = True
+                report.append(f"- Found mentions in online searches")
+                break
+        if not found_results:
+            report.append("- No significant digital footprint found\n")
+    
+    # Social Media
+    if 'social_media' in results:
+        report.append("## 3. Social Media Presence")
+        for platform, data in results['social_media'].items():
+            if data and isinstance(data, list) and len(data) > 0:
+                status = data[0].get('status_code')
+                if status == 200:
+                    report.append(f"- {platform.capitalize()}: Profile possibly found")
+                else:
+                    report.append(f"- {platform.capitalize()}: No direct profile found")
+        report.append("")
+    
+    return "\n".join(report)
+
+def generate_ai_analysis(results, api_key):
+    try:
+        client = groq.Groq(api_key=api_key)
+        
+        # Try with smaller model first
+        models = ["mixtral-8x7b-32768", "llama2-70b-4096"]
+        last_error = None
+        
+        initial_prompt = f"""Analyze this phone number information and create a detailed report:
+        {json.dumps(results, indent=2)}
     
     Create a comprehensive analysis including:
     1. Basic Information Summary
@@ -316,8 +359,14 @@ def main():
                         
                 with tabs[3]:
                     if groq_api_key:
-                        analysis = generate_ai_analysis(results, groq_api_key)
-                        st.markdown(analysis)
+                        try:
+                            analysis = generate_ai_analysis(results, groq_api_key)
+                            st.markdown(analysis)
+                        except Exception as e:
+                            st.error(f"AI Analysis Error: {str(e)}")
+                            st.info("Falling back to basic report format...")
+                            analysis = generate_human_readable_report(results)
+                            st.markdown(analysis)
                         
                         st.download_button(
                             "📥 Download Report",
@@ -325,7 +374,9 @@ def main():
                             file_name=f"phone_scan_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
                         )
                     else:
-                        st.warning("⚠️ Please add a Groq API key to enable AI analysis")
+                        st.info("No AI key provided - Generating basic report")
+                        analysis = generate_human_readable_report(results)
+                        st.markdown(analysis)
                         
         except Exception as e:
             st.error(f"❌ Error during scan: {str(e)}")
