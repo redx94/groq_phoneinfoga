@@ -1,4 +1,3 @@
-
 import streamlit as st
 import phonenumbers
 from phonenumbers import geocoder, carrier, timezone
@@ -9,21 +8,17 @@ import groq
 import tempfile
 from datetime import datetime
 
-# Initialize Groq client
-client = groq.Groq()
-
 class AdvancedPhoneInfoga:
     def __init__(self, phone_number, region=None):
         self.phone_number = phone_number
         self.parsed_number = phonenumbers.parse(phone_number, region)
         self.results = {}
         self.rate_limit = {'count': 0, 'max_requests': 100}
-        
-    # ... (keeping all existing methods from the original class)
+
     def check_rate_limit(self):
         self.rate_limit['count'] += 1
         return self.rate_limit['count'] <= self.rate_limit['max_requests']
-        
+
     def get_line_type(self):
         number_type = phonenumbers.number_type(self.parsed_number)
         type_map = {
@@ -77,7 +72,7 @@ class AdvancedPhoneInfoga:
     def run(self):
         if not self.validate_number():
             return {"Error": "Invalid phone number format"}
-            
+
         if not self.check_rate_limit():
             return {"Error": "Rate limit exceeded"}
 
@@ -86,75 +81,74 @@ class AdvancedPhoneInfoga:
         self.lookup_via_api()
         self.web_scrape_info()
         self.dark_web_scan()
-        
+
         risk_score = 0
         if self.results.get('LineType') == "VOIP":
             risk_score += 50
         if not self.results.get('Carrier'):
             risk_score += 30
-            
+
         self.results['RiskScore'] = risk_score
         return self.results
 
-def generate_ai_analysis(results):
+def generate_ai_analysis(results, api_key):
     """Generate AI analysis using Groq"""
+    client = groq.Groq(api_key=api_key)
     prompt = f"""Analyze the following phone number information and create a detailed markdown report:
     {json.dumps(results, indent=2)}
-    
+
     Focus on:
     1. Basic Information
     2. Risk Assessment
     3. Key Findings
     4. Recommendations
-    
+
     Format the response in markdown with proper headers, lists, and tables where appropriate.
     """
-    
+
     chat_completion = client.chat.completions.create(
         messages=[{"role": "user", "content": prompt}],
         model="mixtral-8x7b-32768",
         temperature=0.3,
     )
-    
+
     return chat_completion.choices[0].message.content
 
 def main():
     st.set_page_config(page_title="Advanced PhoneInfoga", layout="wide")
     st.title("Advanced PhoneInfoga Tool")
-    
+
     # Sidebar for API key
     with st.sidebar:
         st.header("Configuration")
         groq_api_key = st.text_input("Enter Groq API Key", type="password")
-        if groq_api_key:
-            client.api_key = groq_api_key
 
     # Main content
     phone_number = st.text_input("Enter phone number (with country code, e.g., +1xxxxxxxxxx):")
     region = st.selectbox("Select default region:", ["US", "GB", "IN", "CA", "AU"])
-    
+
     if st.button("Analyze Number"):
         if phone_number:
             with st.spinner("Analyzing phone number..."):
                 tool = AdvancedPhoneInfoga(phone_number, region=region)
                 results = tool.run()
-                
+
                 # Display raw results in expandable section
                 with st.expander("Raw Results"):
                     st.json(results)
-                
+
                 # Generate and display AI analysis
                 if groq_api_key:
-                    analysis = generate_ai_analysis(results)
+                    analysis = generate_ai_analysis(results, groq_api_key)
                     st.markdown(analysis)
-                    
+
                     # Download buttons
                     st.download_button(
                         "Download Report (MD)",
                         analysis,
                         file_name=f"phone_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
                     )
-                    
+
                     st.download_button(
                         "Download Report (TXT)",
                         analysis,
