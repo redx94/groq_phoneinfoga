@@ -52,15 +52,12 @@ class AdvancedScanner:
         return session
 
     def _initialize_apis(self):
+        # Using free/public APIs that don't require authentication
         self.api_endpoints = {
             'lookup': [
-                'https://api.numlookupapi.com/v1/validate/',
-                'https://api.apilayer.com/number_verification/',
+                'https://phonevalidation.abstractapi.com/v1/',
             ],
-            'reputation': [
-                'https://api.fraudguard.io/v2/phone/',
-                'https://api.spamhaus.org/v2/phone/'
-            ]
+            'reputation': []
         }
 
     @staticmethod
@@ -166,7 +163,7 @@ class AdvancedScanner:
         region_code = phonenumbers.region_code_for_number(parsed_number)
         return {
             'code': region_code,
-            'metadata': phonenumbers.PhoneMetadata.load_for_region(region_code),
+            'region': phonenumbers.geocoder.description_for_number(parsed_number, "en")
         }
 
     def _assess_carrier_reliability(self) -> float:
