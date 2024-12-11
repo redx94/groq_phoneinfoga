@@ -1,5 +1,5 @@
 
-run = "streamlit run main.py --server.address=0.0.0.0 --server.port=8080 --browser.gatherUsageStats=false"
+run = "streamlit run main.py --server.address=0.0.0.0 --server.port=8080 --browser.gatherUsageStats=false --server.headless=true"
 entrypoint = "main.py"
 modules = ["python-3.11"]
 
@@ -7,7 +7,7 @@ modules = ["python-3.11"]
 channel = "stable-24_05"
 
 [deployment]
-run = ["streamlit", "run", "main.py", "--server.address=0.0.0.0", "--server.port=8080", "--browser.gatherUsageStats=false"]
+run = ["streamlit", "run", "main.py", "--server.address=0.0.0.0", "--server.port=8080", "--browser.gatherUsageStats=false", "--server.headless=true"]
 deploymentTarget = "cloudrun"
 
 [env]
