@@ -1,7 +1,9 @@
+
 { pkgs }: {
   deps = [
-    pkgs.python3Packages.phonenumbers
-    pkgs.python3Packages.requests
-    pkgs.python3Packages.beautifulsoup4
+    pkgs.python3
+    pkgs.python311Packages.phonenumbers
+    pkgs.python311Packages.requests
+    pkgs.python311Packages.beautifulsoup4
   ];
 }
