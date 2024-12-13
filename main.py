@@ -464,6 +464,27 @@ class AdvancedScanner:
         # Analyze geographical patterns
         geo_data = self._analyze_geographical_patterns()
         if geo_data.get('coordinates', []):
+
+    def _scan_social_networks(self) -> List[Dict]:
+        """Scan social networks for the phone number presence."""
+        results = []
+        for platform, url in self.api_endpoints['social'].items():
+            try:
+                response = self._make_request(url, {'q': self.number})
+                results.append({
+                    'platform': platform,
+                    'found': bool(response.get('text')),
+                    'timestamp': datetime.now().isoformat()
+                })
+            except Exception as e:
+                logger.warning(f"Social network scan failed for {platform}: {str(e)}")
+                results.append({
+                    'platform': platform,
+                    'error': str(e),
+                    'timestamp': datetime.now().isoformat()
+                })
+        return results
+
             coords = np.array(geo_data['coordinates'])
             geo_clusters = DBSCAN(eps=0.1, min_samples=2).fit(coords)
             location_patterns = {
