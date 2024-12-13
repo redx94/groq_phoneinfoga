@@ -326,7 +326,7 @@ class AdvancedScanner:
         results = {
             'directory_listings': self._scan_phone_directories(),
             'social_footprint': self._scan_social_networks(),
-            'leaked_data': self._check_leak_databases(),
+            'leaked_data': self._check_leak_databases(), # Added this line
             'timestamp': datetime.now().isoformat()
         }
         
@@ -438,6 +438,7 @@ class AdvancedScanner:
     def _analyze_geographical_patterns(self) -> Dict:
         return {"primary_location": "unknown", "movement_pattern": "static"}
 
+
     def _analyze_patterns(self) -> Dict:
         from sklearn.cluster import DBSCAN
         from sklearn.preprocessing import StandardScaler
@@ -464,27 +465,6 @@ class AdvancedScanner:
         # Analyze geographical patterns
         geo_data = self._analyze_geographical_patterns()
         if geo_data.get('coordinates', []):
-
-    def _scan_social_networks(self) -> List[Dict]:
-        """Scan social networks for the phone number presence."""
-        results = []
-        for platform, url in self.api_endpoints['social'].items():
-            try:
-                response = self._make_request(url, {'q': self.number})
-                results.append({
-                    'platform': platform,
-                    'found': bool(response.get('text')),
-                    'timestamp': datetime.now().isoformat()
-                })
-            except Exception as e:
-                logger.warning(f"Social network scan failed for {platform}: {str(e)}")
-                results.append({
-                    'platform': platform,
-                    'error': str(e),
-                    'timestamp': datetime.now().isoformat()
-                })
-        return results
-
             coords = np.array(geo_data['coordinates'])
             geo_clusters = DBSCAN(eps=0.1, min_samples=2).fit(coords)
             location_patterns = {
@@ -523,6 +503,26 @@ class AdvancedScanner:
                 'reliability': self._assess_pattern_reliability()
             }
         }
+
+    def _scan_social_networks(self) -> List[Dict]:
+        """Scan social networks for the phone number presence."""
+        results = []
+        for platform, url in self.api_endpoints['social'].items():
+            try:
+                response = self._make_request(url, {'q': self.number})
+                results.append({
+                    'platform': platform,
+                    'found': bool(response.get('text')),
+                    'timestamp': datetime.now().isoformat()
+                })
+            except Exception as e:
+                logger.warning(f"Social network scan failed for {platform}: {str(e)}")
+                results.append({
+                    'platform': platform,
+                    'error': str(e),
+                    'timestamp': datetime.now().isoformat()
+                })
+        return results
 
     def _analyze_usage_frequency(self) -> Dict:
         return {'daily': 0, 'weekly': 0, 'monthly': 0}
@@ -631,6 +631,20 @@ class AdvancedScanner:
                 lines.append(f"- {key}: {value}")
         lines.append("")
         return lines
+
+    def _check_leak_databases(self) -> Dict: # Added this function
+        # Placeholder implementation - replace with actual leak database checks
+        return {"leaks_found": 0, "sources": []}
+
+    def _gather_historical_data(self) -> Dict: # Added this function
+        # Placeholder implementation - replace with actual historical data gathering
+        return {"data_points": [], "sources": []}
+
+    def _check_fraud_indicators(self) -> Dict: # Added this function
+        # Placeholder implementation - replace with actual fraud indicator checks
+        return {"indicators_found": 0, "types": []}
+
+
 
 def generate_ai_analysis(results: Dict, api_key: str) -> str:
     client = groq.Groq(api_key=api_key)
