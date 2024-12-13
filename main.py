@@ -52,11 +52,8 @@ class AdvancedScanner:
         return session
 
     def _initialize_apis(self):
-        # Using free/public APIs that don't require authentication
         self.api_endpoints = {
-            'lookup': [
-                'https://phonevalidation.abstractapi.com/v1/',
-            ],
+            'lookup': [],  # Removed failing APIs
             'reputation': []
         }
 
@@ -260,19 +257,23 @@ class AdvancedScanner:
         }
 
     def _verify_number(self) -> Dict:
-        verification_results = []
-        for endpoint in self.api_endpoints['lookup']:
-            try:
-                result = self._make_request(f"{endpoint}{self.number}")
-                verification_results.append(result)
-            except Exception as e:
-                logger.error(f"Verification failed for endpoint {endpoint}: {str(e)}")
-
-        return {
-            'verified': any(result.get('valid', False) for result in verification_results),
-            'verification_sources': len(verification_results),
-            'confidence_score': self._calculate_verification_confidence(verification_results)
-        }
+        try:
+            parsed = phonenumbers.parse(self.number)
+            is_valid = phonenumbers.is_valid_number(parsed)
+            return {
+                'verified': is_valid,
+                'verification_sources': 1,
+                'confidence_score': 1.0 if is_valid else 0.0,
+                'type': phonenumbers.number_type(parsed)
+            }
+        except Exception as e:
+            logger.error(f"Number verification failed: {str(e)}")
+            return {
+                'verified': False,
+                'verification_sources': 0,
+                'confidence_score': 0.0,
+                'error': str(e)
+            }
 
     def _deep_web_scan(self) -> Dict:
         # Implement deep web scanning logic
@@ -530,6 +531,9 @@ def main():
             logger.exception("Scan failed")
 
 if __name__ == "__main__":
-    import os
-    port = int(os.environ.get("PORT", 8080))
-    main()
+    try:
+        st.set_option('server.address', '0.0.0.0')
+        st.set_option('server.port', int(os.environ.get("PORT", 8080)))
+        main()
+    except Exception as e:
+        logger.error(f"Application startup failed: {e}")
