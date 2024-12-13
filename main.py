@@ -23,6 +23,13 @@ class AdvancedScanner:
             raise ValueError("Phone number cannot be empty")
         if not isinstance(self.api_endpoints, dict):
             raise ValueError("API endpoints must be a dictionary")
+        try:
+            import phonenumbers
+            parsed_number = phonenumbers.parse(self.number)
+            if not phonenumbers.is_valid_number(parsed_number):
+                raise ValueError("Invalid phone number format")
+        except Exception as e:
+            raise ValueError(f"Phone number validation failed: {str(e)}")
 
     def scan(self) -> Dict:
         """Main scanning method that orchestrates all checks."""
@@ -44,9 +51,23 @@ class AdvancedScanner:
             logger.error(f"Scan failed: {str(e)}")
             raise
 
+    def __init__(self, number: str, api_endpoints: Dict):
+        self.number = number
+        self.api_endpoints = api_endpoints if isinstance(api_endpoints, dict) else {}
+        self._last_request_time = {}
+        self._request_limits = {}
+        self._validate_initialization()
+
     def _make_request(self, url: str, params: Dict) -> Dict:
-        """Simulated API request method."""
+        """API request method with rate limiting."""
         try:
+            current_time = datetime.now()
+            if url in self._last_request_time:
+                time_diff = (current_time - self._last_request_time[url]).total_seconds()
+                if time_diff < self._request_limits.get(url, 1.0):
+                    raise Exception("Rate limit exceeded")
+            
+            self._last_request_time[url] = current_time
             # Placeholder for actual API request
             return {"status": "success", "text": "Sample response"}
         except Exception as e:
@@ -152,7 +173,13 @@ class AdvancedScanner:
     def _calculate_risk_score(self) -> float:
         """Calculate risk score based on various factors."""
         try:
-            return 0.0  # Placeholder for actual risk calculation
+            risk_factors = {
+                'directory_presence': len(self._scan_phone_directories()) * 0.2,
+                'social_presence': len(self._scan_social_networks()) * 0.3,
+                'leak_presence': self._check_leak_databases().get('leaks_found', 0) * 0.5
+            }
+            total_risk = sum(risk_factors.values())
+            return min(max(total_risk, 0.0), 10.0)  # Normalize between 0-10
         except Exception as e:
             logger.error(f"Risk score calculation failed: {str(e)}")
             return -1.0
