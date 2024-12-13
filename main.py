@@ -2,6 +2,7 @@
 import logging
 import groq
 import numpy as np
+import streamlit as st
 from datetime import datetime
 from typing import Dict, List
 from sklearn.cluster import DBSCAN
@@ -12,6 +13,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class AdvancedScanner:
+    # [Previous AdvancedScanner class implementation remains the same]
     def __init__(self, number: str, api_endpoints: Dict):
         self.number = number
         self.api_endpoints = api_endpoints if isinstance(api_endpoints, dict) else {}
@@ -168,3 +170,55 @@ def generate_ai_analysis(results: Dict, api_key: str) -> str:
     except Exception as e:
         logger.error(f"AI analysis generation failed: {str(e)}")
         return f"Analysis failed: {str(e)}"
+
+# Streamlit UI
+def main():
+    st.set_page_config(page_title="Phone Number Intelligence", page_icon="📱")
+    st.title("Advanced Phone Number Intelligence")
+
+    # Input section
+    phone_number = st.text_input("Enter Phone Number:", placeholder="+1234567890")
+    api_key = st.text_input("Enter API Key:", type="password")
+
+    if st.button("Analyze"):
+        if phone_number:
+            try:
+                # Initialize scanner with dummy API endpoints
+                scanner = AdvancedScanner(phone_number, {"social": {"facebook": "api/url", "twitter": "api/url"}})
+                
+                with st.spinner("Scanning..."):
+                    results = scanner.scan()
+                
+                # Display results
+                st.header("Scan Results")
+                
+                # Directory Listings
+                st.subheader("Directory Listings")
+                st.json(results['directory_listings'])
+                
+                # Social Footprint
+                st.subheader("Social Media Presence")
+                st.json(results['social_footprint'])
+                
+                # Leaked Data
+                st.subheader("Data Breach Information")
+                st.json(results['leaked_data'])
+                
+                # Patterns
+                if 'patterns' in results:
+                    st.subheader("Pattern Analysis")
+                    st.json(results['patterns'])
+                
+                # AI Analysis
+                if api_key:
+                    st.subheader("AI Analysis")
+                    analysis = generate_ai_analysis(results, api_key)
+                    st.write(analysis)
+                    
+            except Exception as e:
+                st.error(f"Error during analysis: {str(e)}")
+        else:
+            st.warning("Please enter a phone number")
+
+if __name__ == "__main__":
+    main()
