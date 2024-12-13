@@ -80,27 +80,24 @@ class AdvancedScanner:
     def _scan_social_networks(self) -> List[Dict]:
         """Scan social networks for the phone number presence."""
         try:
-            social_endpoints = self.api_endpoints.get('social', {})
-            if not isinstance(social_endpoints, dict):
+            if not isinstance(self.api_endpoints, dict) or 'social' not in self.api_endpoints:
                 logger.warning("Social endpoints not properly configured")
                 return []
 
             results = []
-            for platform, url in social_endpoints.items():
-                try:
-                    response = self._make_request(url, {'q': self.number})
-                    results.append({
-                        'platform': platform,
-                        'found': bool(response.get('text')),
-                        'timestamp': datetime.now().isoformat()
-                    })
-                except Exception as e:
-                    logger.warning(f"Social network scan failed for {platform}: {str(e)}")
-                    results.append({
-                        'platform': platform,
-                        'error': str(e),
-                        'timestamp': datetime.now().isoformat()
-                    })
+            for platform, url in self.api_endpoints['social'].items():
+                response = self._make_request(url, {'q': self.number})
+                result = {
+                    'platform': platform,
+                    'timestamp': datetime.now().isoformat()
+                }
+                
+                if response.get('status') == 'success':
+                    result['found'] = bool(response.get('text'))
+                else:
+                    result['error'] = response.get('text', 'Unknown error')
+                    
+                results.append(result)
             return results
         except Exception as e:
             logger.error(f"Social network scanning failed: {str(e)}")
@@ -202,12 +199,20 @@ def generate_ai_analysis(results: Dict, api_key: str) -> Optional[str]:
 
 # Streamlit UI
 def main():
-    st.set_page_config(page_title="Phone Number Intelligence", page_icon="📱")
+    st.set_page_config(page_title="Phone Number Intelligence", page_icon="📱", layout="wide")
     st.title("Advanced Phone Number Intelligence")
 
-    # Input section
-    phone_number = st.text_input("Enter Phone Number:", placeholder="+1234567890")
-    api_key = st.text_input("Enter API Key:", type="password")
+    # Sidebar configuration
+    st.sidebar.header("Configuration")
+    phone_number = st.sidebar.text_input("Enter Phone Number:", placeholder="+1234567890")
+    api_key = st.sidebar.text_input("Enter API Key:", type="password")
+    
+    # Additional options
+    st.sidebar.subheader("Scan Options")
+    enable_social = st.sidebar.checkbox("Social Media Scan", value=True)
+    enable_leaks = st.sidebar.checkbox("Data Breach Scan", value=True)
+    enable_patterns = st.sidebar.checkbox("Pattern Analysis", value=True)
+    enable_ai = st.sidebar.checkbox("AI Analysis", value=True)
 
     if st.button("Analyze"):
         if phone_number:

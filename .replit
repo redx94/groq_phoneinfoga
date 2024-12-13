@@ -7,8 +7,9 @@ modules = ["python-3.11"]
 channel = "stable-24_05"
 
 [deployment]
-run = ["streamlit", "run", "main.py", "--server.address=0.0.0.0", "--server.port=8080", "--browser.gatherUsageStats=false", "--server.headless=true", "--browser.serverAddress=0.0.0.0", "--server.enableCORS=false", "--server.enableXsrfProtection=false"]
+run = ["streamlit", "run", "main.py", "--server.address=0.0.0.0", "--server.port=8080", "--browser.gatherUsageStats=false", "--server.headless=true", "--browser.serverAddress=0.0.0.0", "--server.enableCORS=false", "--server.enableXsrfProtection=false", "--server.maxMessageSize=200", "--browser.serverPort=8080"]
 deploymentTarget = "cloudrun"
+ignorePorts = false
 
 [env]
 PYTHONPATH = "${PYTHONPATH}:${workspaceDir}"
