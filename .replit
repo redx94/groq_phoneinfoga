@@ -1,5 +1,5 @@
 
-run = "streamlit run main.py --server.address=0.0.0.0 --server.port=8080 --browser.gatherUsageStats=false --server.headless=true --browser.serverAddress=0.0.0.0 --server.enableCORS=false --server.enableXsrfProtection=false"
+run = "streamlit run main.py --server.address=0.0.0.0 --server.port=8080 --browser.gatherUsageStats=false --server.headless=true --browser.serverAddress=0.0.0.0 --server.enableCORS=false --server.enableXsrfProtection=false --server.maxUploadSize=200 --server.maxMessageSize=200"
 entrypoint = "main.py"
 modules = ["python-3.11"]
 
