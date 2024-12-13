@@ -742,8 +742,6 @@ def main():
 
 if __name__ == "__main__":
     try:
-        st.set_option('server.address', '0.0.0.0')
-        st.set_option('server.port', int(os.environ.get("PORT", 8080)))
         main()
     except Exception as e:
         logger.error(f"Application startup failed: {e}")
