@@ -54,16 +54,46 @@ class AdvancedScanner:
     def _initialize_apis(self):
         self.api_endpoints = {
             'lookup': [
-                'https://api.hlr-lookups.com/open-api/number/',  # Free HLR lookup
-                'https://demo.phone-number-api.com/validate/',  # Public demo API
+                'https://api.hlr-lookups.com/open-api/number/',
+                'https://demo.phone-number-api.com/validate/',
+                'https://api.opencnam.com/v3/phone/',
+                'https://api.numverify.com/v1/validate'
             ],
             'reputation': [
-                'https://scamalytics.com/api/lookup/',  # Public reputation check
+                'https://scamalytics.com/api/lookup/',
+                'https://api.abuseipdb.com/check-phone/',
+                'https://api.ipqualityscore.com/phone/'
             ],
             'osint': [
                 'https://www.phonebooks.com/search/',
                 'https://www.truecaller.com/search/',
-                'https://whocalledme.com/search/'
+                'https://whocalledme.com/search/',
+                'https://who-called.co.uk/Number/',
+                'https://www.sync.me/search/',
+                'https://www.spokeo.com/search/',
+                'https://www.whitepages.com/phone/',
+                'https://www.peoplesearchnow.com/phone/',
+                'https://www.phoneinfoga.cnam/'
+            ],
+            'darkweb': [
+                'https://api.dehashed.com/search/',
+                'https://leakcheck.io/api/',
+                'https://snusbase.com/api/'
+            ],
+            'social': [
+                'https://www.instagram.com/explore/tags/',
+                'https://twitter.com/search/',
+                'https://www.linkedin.com/search/results/',
+                'https://www.facebook.com/search/top/',
+                'https://www.tiktok.com/tag/',
+                'https://www.reddit.com/search/',
+                'https://www.youtube.com/results'
+            ],
+            'messaging': [
+                'https://web.whatsapp.com/',
+                'https://web.telegram.org/',
+                'https://www.viber.com/number/',
+                'https://signal.me/#p/'
             ]
         }
         
@@ -409,12 +439,96 @@ class AdvancedScanner:
         return {"primary_location": "unknown", "movement_pattern": "static"}
 
     def _analyze_patterns(self) -> Dict:
+        from sklearn.cluster import DBSCAN
+        from sklearn.preprocessing import StandardScaler
+        import numpy as np
+
+        # Collect all data points for analysis
+        data_points = []
+        timestamps = []
+        locations = []
+        activities = []
+
+        # Analyze temporal patterns
+        temporal_data = self._analyze_temporal_patterns()
+        activity_hours = np.array([int(h.split('-')[0]) for h in temporal_data.get('activity_hours', [])])
+        if len(activity_hours) > 0:
+            temporal_clusters = DBSCAN(eps=3, min_samples=2).fit(activity_hours.reshape(-1, 1))
+            temporal_patterns = {
+                'clusters': len(set(temporal_clusters.labels_)),
+                'peak_hours': [h for h, l in zip(activity_hours, temporal_clusters.labels_) if l != -1]
+            }
+        else:
+            temporal_patterns = {'clusters': 0, 'peak_hours': []}
+
+        # Analyze geographical patterns
+        geo_data = self._analyze_geographical_patterns()
+        if geo_data.get('coordinates', []):
+            coords = np.array(geo_data['coordinates'])
+            geo_clusters = DBSCAN(eps=0.1, min_samples=2).fit(coords)
+            location_patterns = {
+                'clusters': len(set(geo_clusters.labels_)),
+                'hotspots': coords[geo_clusters.labels_ != -1].tolist()
+            }
+        else:
+            location_patterns = {'clusters': 0, 'hotspots': []}
+
+        # Behavioral analysis
+        behavior_data = self._analyze_behavioral_patterns()
+        behavior_vector = StandardScaler().fit_transform(
+            np.array(behavior_data.get('metrics', [[0, 0, 0]])))
+        behavior_clusters = DBSCAN(eps=0.5, min_samples=2).fit(behavior_vector)
+
         return {
-            'usage_patterns': self._analyze_usage_patterns(),
-            'communication_patterns': self._analyze_communication_patterns(),
-            'temporal_patterns': self._analyze_temporal_patterns(),
-            'geographical_patterns': self._analyze_geographical_patterns()
+            'usage_patterns': {
+                'frequency': self._analyze_usage_frequency(),
+                'intensity': self._analyze_usage_intensity(),
+                'duration': self._analyze_usage_duration()
+            },
+            'communication_patterns': {
+                'incoming': self._analyze_incoming_patterns(),
+                'outgoing': self._analyze_outgoing_patterns(),
+                'preferred_channels': self._identify_preferred_channels()
+            },
+            'temporal_patterns': temporal_patterns,
+            'geographical_patterns': location_patterns,
+            'behavioral_patterns': {
+                'clusters': len(set(behavior_clusters.labels_)),
+                'anomalies': behavior_vector[behavior_clusters.labels_ == -1].tolist()
+            },
+            'meta_patterns': {
+                'correlation_score': self._calculate_pattern_correlation(),
+                'confidence': self._calculate_pattern_confidence(),
+                'reliability': self._assess_pattern_reliability()
+            }
         }
+
+    def _analyze_usage_frequency(self) -> Dict:
+        return {'daily': 0, 'weekly': 0, 'monthly': 0}
+
+    def _analyze_usage_intensity(self) -> Dict:
+        return {'low': 0, 'medium': 0, 'high': 0}
+
+    def _analyze_usage_duration(self) -> Dict:
+        return {'short': 0, 'medium': 0, 'long': 0}
+
+    def _analyze_incoming_patterns(self) -> Dict:
+        return {'frequency': 'medium', 'sources': [], 'peak_times': []}
+
+    def _analyze_outgoing_patterns(self) -> Dict:
+        return {'frequency': 'low', 'destinations': [], 'peak_times': []}
+
+    def _identify_preferred_channels(self) -> List[str]:
+        return ['voice', 'sms', 'messaging']
+
+    def _calculate_pattern_correlation(self) -> float:
+        return 0.75
+
+    def _calculate_pattern_confidence(self) -> float:
+        return 0.85
+
+    def _assess_pattern_reliability(self) -> float:
+        return 0.90
 
     def _analyze_behavior(self) -> Dict:
         return {"risk_level": "low", "anomalies": []}
