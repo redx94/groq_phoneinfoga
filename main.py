@@ -222,11 +222,6 @@ def main():
 
 if __name__ == "__main__":
     try:
-        # Configure Streamlit options
-        st.set_option('server.address', '0.0.0.0')
-        st.set_option('server.port', 8080)
-        st.set_option('browser.serverAddress', '0.0.0.0')
-        st.set_option('browser.serverPort', 8080)
         main()
     except Exception as e:
         logger.error(f"Application startup failed: {e}")
