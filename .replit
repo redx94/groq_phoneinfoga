@@ -1,5 +1,5 @@
 
-run = "streamlit run main.py --server.address=0.0.0.0 --server.port=8080 --browser.gatherUsageStats=false --server.headless=true"
+run = "streamlit run main.py --server.address=0.0.0.0 --server.port=8080 --browser.gatherUsageStats=false --server.headless=true --browser.serverAddress=0.0.0.0 --server.enableCORS=false --server.enableXsrfProtection=false"
 entrypoint = "main.py"
 modules = ["python-3.11"]
 
@@ -7,12 +7,12 @@ modules = ["python-3.11"]
 channel = "stable-24_05"
 
 [deployment]
-run = ["streamlit", "run", "main.py", "--server.address=0.0.0.0", "--server.port=8080", "--browser.gatherUsageStats=false", "--server.headless=true"]
+run = ["streamlit", "run", "main.py", "--server.address=0.0.0.0", "--server.port=8080", "--browser.gatherUsageStats=false", "--server.headless=true", "--browser.serverAddress=0.0.0.0", "--server.enableCORS=false", "--server.enableXsrfProtection=false"]
 deploymentTarget = "cloudrun"
 
 [env]
 PYTHONPATH = "${PYTHONPATH}:${workspaceDir}"
 
 [[ports]]
-localPort = 80
+localPort = 8080
 externalPort = 80
