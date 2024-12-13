@@ -16,6 +16,8 @@ class AdvancedScanner:
     def __init__(self, number: str, api_endpoints: Dict):
         self.number = number
         self.api_endpoints = api_endpoints if isinstance(api_endpoints, dict) else {}
+        self._last_request_time = {}
+        self._request_limits = {}
         self._validate_initialization()
 
     def _validate_initialization(self):
@@ -50,13 +52,6 @@ class AdvancedScanner:
         except Exception as e:
             logger.error(f"Scan failed: {str(e)}")
             raise
-
-    def __init__(self, number: str, api_endpoints: Dict):
-        self.number = number
-        self.api_endpoints = api_endpoints if isinstance(api_endpoints, dict) else {}
-        self._last_request_time = {}
-        self._request_limits = {}
-        self._validate_initialization()
 
     def _make_request(self, url: str, params: Dict) -> Dict:
         """API request method with rate limiting."""
