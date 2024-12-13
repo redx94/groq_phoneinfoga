@@ -53,9 +53,26 @@ class AdvancedScanner:
 
     def _initialize_apis(self):
         self.api_endpoints = {
-            'lookup': [],  # Removed failing APIs
-            'reputation': []
+            'lookup': [
+                'https://api.hlr-lookups.com/open-api/number/',  # Free HLR lookup
+                'https://demo.phone-number-api.com/validate/',  # Public demo API
+            ],
+            'reputation': [
+                'https://scamalytics.com/api/lookup/',  # Public reputation check
+            ],
+            'osint': [
+                'https://www.phonebooks.com/search/',
+                'https://www.truecaller.com/search/',
+                'https://whocalledme.com/search/'
+            ]
         }
+        
+        # OSINT search engines
+        self.search_engines = [
+            'https://search.brave.com/search',
+            'https://yandex.com/search/',
+            'https://duckduckgo.com/'
+        ]
 
     @staticmethod
     def normalize_number(number: str) -> str:
@@ -276,8 +293,87 @@ class AdvancedScanner:
             }
 
     def _deep_web_scan(self) -> Dict:
-        # Implement deep web scanning logic
-        return {"status": "simulated", "timestamp": datetime.now().isoformat()}
+        results = {
+            'directory_listings': self._scan_phone_directories(),
+            'social_footprint': self._scan_social_networks(),
+            'leaked_data': self._check_leak_databases(),
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        # Search across multiple engines
+        for engine in self.search_engines:
+            results[f"search_{engine.split('.')[1]}"] = self._search_engine_scan(engine)
+            
+        return results
+        
+    def _scan_phone_directories(self) -> List[Dict]:
+        directories = []
+        for endpoint in self.api_endpoints['osint']:
+            try:
+                response = self.session.get(
+                    endpoint,
+                    params={'q': self.number},
+                    timeout=self.config.timeout
+                )
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.text, 'html.parser')
+                    results = soup.find_all('div', class_=['result', 'listing', 'entry'])
+                    directories.extend([{
+                        'source': endpoint,
+                        'title': r.get_text(strip=True),
+                        'link': r.find('a')['href'] if r.find('a') else None
+                    } for r in results[:5]])
+            except Exception as e:
+                logger.warning(f"Directory scan failed for {endpoint}: {str(e)}")
+        return directories
+
+    def _search_engine_scan(self, engine: str) -> Dict:
+        try:
+            # Format number for search
+            search_formats = [
+                self.number,
+                self.number.replace('+', ''),
+                ' '.join(self.number),
+                '"' + self.number + '"'
+            ]
+            
+            results = []
+            for fmt in search_formats:
+                response = self.session.get(
+                    engine,
+                    params={'q': fmt},
+                    timeout=self.config.timeout
+                )
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.text, 'html.parser')
+                    results.extend(self._extract_search_results(soup))
+            
+            return {
+                'engine': engine,
+                'results': results[:10],
+                'total_found': len(results)
+            }
+        except Exception as e:
+            logger.warning(f"Search engine scan failed for {engine}: {str(e)}")
+            return {'engine': engine, 'error': str(e)}
+
+    def _extract_search_results(self, soup: BeautifulSoup) -> List[Dict]:
+        results = []
+        for result in soup.find_all(['div', 'article'], class_=['result', 'g']):
+            try:
+                title = result.find(['h3', 'h2', 'h1'])
+                link = result.find('a')
+                snippet = result.find(['p', 'span', 'div'], class_=['snippet', 'desc'])
+                
+                if title and link:
+                    results.append({
+                        'title': title.get_text(strip=True),
+                        'url': link.get('href'),
+                        'snippet': snippet.get_text(strip=True) if snippet else None
+                    })
+            except:
+                continue
+        return results
 
     def _analyze_social_media(self) -> Dict:
         platforms = {
