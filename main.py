@@ -4,9 +4,8 @@ import groq
 import numpy as np
 import streamlit as st
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, Optional
 from sklearn.cluster import DBSCAN
-from sklearn.preprocessing import StandardScaler
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -158,18 +157,26 @@ class AdvancedScanner:
             logger.error(f"Risk score calculation failed: {str(e)}")
             return -1.0
 
-def generate_ai_analysis(results: Dict, api_key: str) -> str:
+def generate_ai_analysis(results: Dict, api_key: str) -> Optional[str]:
     """Generate AI analysis of the scan results."""
     try:
         if not api_key:
             raise ValueError("API key is required for AI analysis")
         
         client = groq.Groq(api_key=api_key)
-        # Add actual AI analysis implementation here
-        return "AI Analysis placeholder"
+        chat_completion = client.chat.completions.create(
+            messages=[{
+                "role": "user",
+                "content": f"Analyze this phone number intelligence data: {str(results)}"
+            }],
+            model="mixtral-8x7b-32768",
+            temperature=0.7,
+            max_tokens=500
+        )
+        return chat_completion.choices[0].message.content
     except Exception as e:
         logger.error(f"AI analysis generation failed: {str(e)}")
-        return f"Analysis failed: {str(e)}"
+        return None
 
 # Streamlit UI
 def main():
@@ -213,7 +220,10 @@ def main():
                 if api_key:
                     st.subheader("AI Analysis")
                     analysis = generate_ai_analysis(results, api_key)
-                    st.write(analysis)
+                    if analysis:
+                        st.write(analysis)
+                    else:
+                        st.error("AI analysis failed. Please check your API key and try again.")
                     
             except Exception as e:
                 st.error(f"Error during analysis: {str(e)}")
